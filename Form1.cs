@@ -46,7 +46,8 @@ namespace NesperTest
         private void InitializeNesper()
         {
             nesperConf = new Configuration();
-            nesperConf.AddEventType(typeof(Payload));
+            nesperConf.AddEventType("pay", typeof(PayloadSys));
+            nesperConf.AddEventType("pay2", typeof(PayloadHuman));
             epService = EPServiceProviderManager.GetDefaultProvider(nesperConf);
             _runtime = epService.EPRuntime;
             mh = new MessageHandler();
@@ -57,19 +58,19 @@ namespace NesperTest
         {
             eplStatements = new List<string>();
             //Minimize->Maximize->Scroll->coffee (recharging)
-            eplStatements.Add("SELECT \"recharging\" FROM pattern [every a=Payload(PayloadText=\"Minimize\") -> every b=Payload(PayloadText=\"Maximize\") -> every c=Payload(PayloadText=\"Scroll\") -> every d=Payload(PayloadText=\"Coffee\")]");
+            eplStatements.Add("SELECT \"recharging\" FROM pattern [every pay(PayloadText=\"Maximize\") -> pay(PayloadText=\"Scroll\") -> pay2(PayloadText=\"Coffee\")]");
             //minimize->maximize->scroll (bored)
-            eplStatements.Add("SELECT \"bored\" FROM pattern [every a=Payload(PayloadText=\"Minimize\") -> every b=Payload(PayloadText=\"Maximize\") -> every c=Payload(PayloadText=\"Scroll\")]");
+            eplStatements.Add("SELECT \"bored\" FROM pattern [every a=pay(PayloadText=\"Minimize\") -> every b=pay(PayloadText=\"Maximize\") -> every c=pay(PayloadText=\"Scroll\")]");
             //minimize->maximize->lock (gave up)
-            eplStatements.Add("SELECT \"Gave up\" FROM pattern [every a=Payload(PayloadText=\"Minimize\") -> every b=Payload(PayloadText=\"Maximize\") -> every c=Payload(PayloadText=\"Lock\")]");
+            eplStatements.Add("SELECT \"Gave up\" FROM pattern [every a=pay(PayloadText=\"Minimize\") -> every b=pay(PayloadText=\"Maximize\") -> every c=pay(PayloadText=\"Lock\")]");
             //scroll (on a quest)
-            eplStatements.Add("SELECT \"On a quest\" FROM pattern [every a=Payload(PayloadText=\"Scroll\")]");
+            eplStatements.Add("SELECT \"On a quest\" FROM pattern [every a=pay(PayloadText=\"Scroll\")]");
             //blink->blink->stare->delete (angry)
-            eplStatements.Add("SELECT \"Angry\" FROM pattern [every a=Payload(PayloadText=\"Blink\") -> b=Payload(PayloadText=\"Blink\") -> c=Payload(PayloadText=\"Stare\") -> d=Payload(PayloadText=\"Delete\")]");
+            eplStatements.Add("SELECT \"Angry\" FROM pattern [every a=pay2(PayloadText=\"Blink\") -> b=pay2(PayloadText=\"Blink\") -> c=pay2(PayloadText=\"Stare\") -> d=pay(PayloadText=\"Delete\")]");
             //blink->blink->stare (wondering who wrote that code)
-            eplStatements.Add("SELECT \"Wondering who wrote that code\" FROM pattern [every a=Payload(PayloadText=\"Blink\") -> b=Payload(PayloadText=\"Blink\") -> c=Payload(PayloadText=\"Stare\")]");
+            eplStatements.Add("SELECT \"Wondering who wrote that code\" FROM pattern [every a=pay2(PayloadText=\"Blink\") -> b=pay2(PayloadText=\"Blink\") -> c=pay2(PayloadText=\"Stare\")]");
             //blink->blink (In disbelief)
-            eplStatements.Add("SELECT \"In disbelief\" FROM pattern [every a=Payload(PayloadText=\"Blink\") -> b=Payload(PayloadText=\"Blink\")]");
+            eplStatements.Add("SELECT \"In disbelief\" FROM pattern [every a=pay2(PayloadText=\"Blink\") -> b=pay2(PayloadText=\"Blink\")]");
         }
 
         public void Predict(string prediction)
@@ -77,15 +78,28 @@ namespace NesperTest
             lblPredict.Text = "programmer " + prediction;
         }
 
-        
+
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            _runtime.SendEvent(new Payload() { PayloadText = (sender as ComboBox).SelectedItem.ToString() });
+            _runtime.SendEvent(new PayloadSys() { PayloadText = (sender as ComboBox).SelectedItem.ToString() });
+            txtRecd.Text += "->" + (sender as ComboBox).SelectedItem.ToString();
+        }
+
+        private void comboBox2_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            _runtime.SendEvent(new PayloadHuman() { PayloadText = (sender as ComboBox).SelectedItem.ToString() });
             txtRecd.Text += "->" + (sender as ComboBox).SelectedItem.ToString();
         }
     }
 
-    internal class Payload
+    internal class PayloadSys : Payload
+    {
+    }
+    internal class PayloadHuman : Payload
+    {
+    }
+
+    internal abstract class Payload
     {
         public string PayloadText { get; set; }
     }
